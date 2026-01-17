@@ -98,7 +98,7 @@ mvn spring-boot:run "-Dspring-boot.run.arguments=--server.port=8091"
 **Fix**:
 1.  Wiped old volumes: `docker compose down -v`.
 2.  Recreated infra: `docker compose up -d`.
-3.  Manually created DBs using `docker exec`.
+3.  Manually created DBs using `docker exec -U postgres`.
 
 ---
 

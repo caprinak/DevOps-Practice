@@ -45,8 +45,8 @@ Here is the arsenal of commands used to diagnose and fix the system.
 | :--- | :--- |
 | `docker compose down -v` | **The Nuclear Option**. Stops containers AND deletes volumes (data). Use when DB credentials or state are corrupted. |
 | `docker logs ms_pg_sql` | View database logs to see if it's rejecting connections. |
-| `docker exec -i ms_pg_sql psql -U alibou -l` | List all databases inside the running Postgres container. |
-| `docker exec -i ms_pg_sql psql -U alibou -d postgres -c "CREATE DATABASE \"order\";"` | Manually create a database (Note the `\"` escape for reserved words). |
+| `docker exec -i ms_pg_sql psql -U postgres -l` | List all databases inside the running Postgres container. |
+| `docker exec -i ms_pg_sql psql -U postgres -d postgres -c "CREATE DATABASE \"order\";"` | Manually create a database (Note the `\"` escape for reserved words). |
 | `docker ps` | Verify which containers are actually running. |
 
 ### 2. Service & Network Debugging

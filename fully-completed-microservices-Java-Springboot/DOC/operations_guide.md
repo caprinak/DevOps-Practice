@@ -71,7 +71,7 @@ docker-compose up -d
 > **First Time Setup / After Wiping Volumes**:
 > If you are starting fresh or ran `docker compose down -v`, you **MUST** create the databases manually before starting the microservices:
 > ```powershell
-> docker exec -i ms_pg_sql psql -U alibou -d postgres -c "CREATE DATABASE customer; CREATE DATABASE product; CREATE DATABASE \"order\"; CREATE DATABASE payment;"
+> docker exec -i ms_pg_sql psql -U postgres -d postgres -c "CREATE DATABASE customer; CREATE DATABASE product; CREATE DATABASE \"order\"; CREATE DATABASE payment;"
 > ```
 
 ### 2. Maven Commands
