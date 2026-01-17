@@ -10,3 +10,16 @@ spring:
       server:
         native:
           search-locations: classpath:/configurations
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    prometheus:
+      enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+

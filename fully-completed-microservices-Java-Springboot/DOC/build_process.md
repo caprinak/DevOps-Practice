@@ -19,6 +19,12 @@ We used Docker Compose to spin up supporting services.
 docker-compose up -d
 ```
 
+### Step 2.1: Initialize Databases
+**CRITICAL**: If this is a fresh install or you wiped volumes, you must create the databases manually:
+```powershell
+docker exec -i ms_pg_sql psql -U alibou -d postgres -c "CREATE DATABASE customer; CREATE DATABASE product; CREATE DATABASE \"order\"; CREATE DATABASE payment;"
+```
+
 ### Step 3: Service Startup Sequence
 Microservices must be started in a specific order:
 1.  **Config Server (Port 8888)**: The heart of the system.
@@ -85,6 +91,14 @@ mvn spring-boot:run "-Dspring-boot.run.arguments=--server.port=8091"
 **Problem**: We initially expected `payment-service` to be on port `8080`, but it wouldn't respond.
 **Debugging**: Checked `payment-service.yml` in the Config Server.
 **Fix**: Discovered the service is configured to run on port `8060`. Updated all documentation and client references accordingly.
+
+### Issue 8: Database Authentication Failure & Missing Databases
+**Problem**: Services failed with `FATAL: password authentication failed` even with correct credentials.
+**Debugging**: Realized the PostgreSQL container was missing the specific databases (`order`, `customer`, etc.), causing connection rejections that masqueraded as auth failures.
+**Fix**:
+1.  Wiped old volumes: `docker compose down -v`.
+2.  Recreated infra: `docker compose up -d`.
+3.  Manually created DBs using `docker exec`.
 
 ---
 

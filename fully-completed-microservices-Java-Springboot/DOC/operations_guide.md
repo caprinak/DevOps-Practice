@@ -4,10 +4,13 @@ This document provides quick commands and scripts to manage the microservices ec
 
 ---
 
+> 📖 **See Also**: [Debugging & Maintenance Log](debugging_and_maintenance.md) for troubleshooting tips and detailed incident reports.
+
 ## 🚀 One-Click Startup (Recommended)
 
 We have created automated scripts to handle the complex startup sequence for you.
-
+#restart some services  
+docker compose restart kafka postgresql mongodb
 ### Start Everything
 Run this from the project root (`fully-completed-microservices-Java-Springboot`):
 ```powershell
@@ -63,6 +66,13 @@ Ensure your databases and message brokers are up before starting Java apps.
 ```bash
 docker-compose up -d
 ```
+
+> [!IMPORTANT]
+> **First Time Setup / After Wiping Volumes**:
+> If you are starting fresh or ran `docker compose down -v`, you **MUST** create the databases manually before starting the microservices:
+> ```powershell
+> docker exec -i ms_pg_sql psql -U alibou -d postgres -c "CREATE DATABASE customer; CREATE DATABASE product; CREATE DATABASE \"order\"; CREATE DATABASE payment;"
+> ```
 
 ### 2. Maven Commands
 You can run these in the directory of any service (e.g., `services/order`).

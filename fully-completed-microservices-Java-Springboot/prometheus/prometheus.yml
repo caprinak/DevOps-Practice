@@ -1,0 +1,21 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'microservices'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - 'host.docker.internal:8090'  # customer-service
+          - 'host.docker.internal:8050'  # product-service
+          - 'host.docker.internal:8070'  # order-service
+          - 'host.docker.internal:8060'  # payment-service
+          - 'host.docker.internal:8040'  # notification-service
+          - 'host.docker.internal:8222'  # gateway-service
+          - 'host.docker.internal:8888'  # config-server
+          - 'host.docker.internal:8761'  # discovery-service
