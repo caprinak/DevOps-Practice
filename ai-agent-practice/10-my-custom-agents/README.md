@@ -36,7 +36,28 @@ pip install groq
 python simple_agent_groq.py
 ```
 
-### Option C: OpenAI (If you have a key)
+### Option C: Google Gemini (Free Tier - Generous Limits)
+**Best for**: Multimodal tasks, generous free quota
+
+```bash
+# 1. Get free API key
+# Visit: https://aistudio.google.com/app/apikey
+# Sign in with Google → Create API key
+
+# 2. Set environment variable
+$env:GEMINI_API_KEY="your-key-here"
+
+# 3. Install dependency
+pip install google-generativeai
+
+# 4. Run the agent
+python simple_agent_gemini.py
+```
+
+**Free Tier:** 60 requests/minute, ample daily tokens  
+**Models:** gemini-1.5-flash (fast), gemini-1.5-pro (powerful)
+
+### Option D: OpenAI (If you have a key)
 ```bash
 # 1. Set key
 $env:OPENAI_API_KEY="your-key"
@@ -56,7 +77,8 @@ python simple_agent.py
 |------|---------|------|----------|
 | `simple_agent_ollama.py` | Local (Ollama) | Free | Privacy, learning |
 | `simple_agent_groq.py` | Cloud (Groq) | Free tier | Speed, quality |
-| `simple_agent.py` | OpenAI | Paid | Reliability |
+| `simple_agent_gemini.py` | Cloud (Google) | Free tier | Generous limits, multimodal |
+| `simple_agent.py` | Cloud (OpenAI) | Paid | Reliability |
 
 ---
 
@@ -197,8 +219,16 @@ $env:GROQ_API_KEY
 ```bash
 # Install missing dependencies
 pip install groq
-# or
+pip install google-generativeai
 pip install openai
+```
+
+### "Gemini API key not found"
+```bash
+# Set the environment variable
+$env:GEMINI_API_KEY="your-key"
+
+# Get free key at: https://aistudio.google.com/app/apikey
 ```
 
 ---

@@ -2,7 +2,7 @@
 
 ## 🆓 Free/Open Source Alternatives
 
-You have 3 great options that cost $0:
+You have 4 great options that cost $0:
 
 ---
 
@@ -49,7 +49,42 @@ python simple_agent_ollama.py
 
 ---
 
-## Option 2: Groq (Free Tier - Fast API)
+## Option 2: Google Gemini (Free Tier - Very Generous)
+
+Google's Gemini API has a very generous free tier with high rate limits.
+
+### Setup (2 minutes)
+
+**Step 1: Get Free API Key**
+1. Go to: https://aistudio.google.com/app/apikey
+2. Sign in with Google account
+3. Create API key (instant, no credit card)
+
+**Step 2: Set Environment Variable**
+```bash
+# Windows PowerShell
+$env:GEMINI_API_KEY="your-gemini-key"
+
+# Windows Git Bash
+export GEMINI_API_KEY="your-gemini-key"
+```
+
+**Step 3: Install & Run**
+```bash
+pip install google-generativeai
+cd 10-my-custom-agents
+python simple_agent_gemini.py
+```
+
+**Free Tier Limits:**
+- 60 requests/minute
+- Generous daily token quota
+- gemini-1.5-flash: Fast, efficient
+- gemini-1.5-pro: Most capable
+
+---
+
+## Option 3: Groq (Free Tier - Fast API)
 
 Groq provides free API access with generous limits. Uses Llama and Mixtral models.
 
@@ -100,10 +135,10 @@ If you prefer a graphical interface.
 ## 🎯 Recommended Path
 
 ### For Beginners (Start Here):
-1. **Install Ollama** (Option 1 above)
-2. **Download llama3.2** (small, fast)
-3. **Run our Ollama agent** (see below)
-4. **Everything is local and free!**
+1. **Get Gemini API Key** (Option 2 above) - Easiest, no installation
+2. **Run our Gemini agent** - Instant start, generous limits
+3. **Or install Ollama** (Option 1) - For local privacy
+4. **Everything is free!**
 
 ### If You Want Better Quality:
 1. **Get Groq API key** (Option 2)
@@ -187,16 +222,23 @@ python simple_agent_groq.py
 - ✅ You don't want any API keys or accounts
 - ✅ You want to work offline
 
-**Choose Groq if:**
-- ✅ You want the best model quality (70B parameters)
-- ✅ You want maximum speed
-- ✅ Your computer is older/slower
-- ✅ You don't mind creating a free account
+**Choose Gemini if:**
+- ✅ You want the most generous free tier (60 req/min)
+- ✅ You want high-quality responses without local setup
+- ✅ You already have a Google account
+- ✅ You want multimodal capabilities (images, etc.)
 
-**Choose Both:**
-- ✅ Start with Groq for best experience
-- ✅ Switch to Ollama for privacy/offline work
-- ✅ Same agent code, just different backends
+**Choose Groq if:**
+- ✅ You want the fastest inference speed
+- ✅ You want access to Llama 70B (most capable open model)
+- ✅ You need lower latency than Gemini
+- ✅ You don't mind creating another account
+
+**Best Strategy:**
+- ✅ Start with **Gemini** (easiest setup, most generous limits)
+- ✅ Try **Groq** for comparison (different model strengths)
+- ✅ Switch to **Ollama** for privacy/offline work
+- ✅ All agents have the same tools, easy to swap!
 
 ---
 
