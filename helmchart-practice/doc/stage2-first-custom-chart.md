@@ -172,6 +172,13 @@ Expand the name of the chart.
 {{- end }}
 
 {{/*
+Create chart name and version as used by the chart label.
+*/}}
+{{- define "my-first-chart.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
 Create a default fully qualified app name.
 */}}
 {{- define "my-first-chart.fullname" -}}
@@ -219,6 +226,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 |----------|---------|----------------|
 | `my-first-chart.name` | Chart name | `my-first-chart` |
 | `my-first-chart.fullname` | Full release name (release + chart) | `myapp-my-first-chart` |
+| `my-first-chart.chart` | Chart name and version | `my-first-chart-0.1.0` |
 | `my-first-chart.labels` | All standard K8s labels | Label set |
 | `my-first-chart.selectorLabels` | Labels for pod selection | Selector set |
 
