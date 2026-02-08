@@ -69,4 +69,24 @@ Currently, Step 2 (Order -> Payment) is **Synchronous**.
 - **The Solution (Phase 1)**: We are implementing a **Circuit Breaker**. If the Payment Service is slow/down, the "Circuit" will open, failing the request instantly with a friendly message instead of a long timeout.
 
 ---
+
+## 📈 5. Monitoring: The "Scraping" Concept
+
+In our system, **Prometheus** doesn't wait for services to send data. Instead, it uses a process called **Scraping**.
+
+### 🔍 What is "Scraping"?
+Scraping is a **"Pull" model**. Imagine Prometheus is a reporter with a clipboard. Every 15 seconds, it walks up to each service and asks: *"What are your latest stats?"*
+
+*   **The Endpoint**: Each service has a "Public Dashboard" at `/actuator/prometheus`.
+*   **The Content**: This dashboard is just a text file listing numbers (e.g., `http_requests_total=50`, `memory_used=256MB`).
+*   **The Collection**: Prometheus "scrapes" (reads) this text file and stores it in its database.
+
+### ❓ Why "Scrape"? (Pull vs. Push)
+| Feature | Pull (Prometheus) | Push (Traditional) |
+| :--- | :--- | :--- |
+| **Control** | Prometheus controls the traffic. If the system is busy, it won't crash the services with more requests. | Services can overwhelm the monitor during a spike. |
+| **Simplicity** | Services don't need to know where Prometheus is. They just "exist." | Services must be configured with the IP of the monitor. |
+| **Automatic Health Check** | If a scrape fails, Prometheus immediately marks the service as `DOWN`. | If a service dies, the push stops, and the monitor might just think "it's quiet." |
+
+---
 *Maintained by the Antigravity Engineering Team*
