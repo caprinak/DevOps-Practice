@@ -132,37 +132,121 @@ view_file setup-env.sh
 
 ### Follow-up Investigation (2026-03-08)
 
-After a Windows restart one week later, the K8s cluster was observed running again. The following additional investigation was performed:
+After a Windows restart one week later, the K8s cluster was observed running again despite scaling deployments to 0. The following deep investigation was performed:
 
-### Step F: Trace Deployments to Source Projects
-I searched the entire filesystem for YAML files that define these deployments to find which project originally created them.
+### Step F: Re-check Running Pods and Contexts
+Verified the cluster was active and which context was being used.
+**Commands:**
+```powershell
+kubectl config get-contexts
+kubectl get pods -A
+kubectl get deployments -n default
+```
+*Result:* Only one context (`docker-desktop`) existed. `kube-system` pods were running with recent restarts (~4 min ago), but user deployments were still at 0/0 replicas — confirming the cluster engine itself was the issue, not the app deployments.
+
+### Step G: Inspect Running Docker Processes
+Checked which Docker-related processes were active on Windows.
 **Command:**
 ```powershell
-# Searched across all workspace folders for deployment YAML files
-grep -r "client-depl" --include="*.yaml" e:\KHOA\HAPPY_CODING
-grep -r "currency-conversion" --include="*.yaml" e:\KHOA\HAPPY_CODING
-grep -r "currency-exchange" --include="*.yaml" e:\KHOA\HAPPY_CODING
+Get-Process | Where-Object { $_.Name -like "*Docker*" } | Select-Object Name, Id, Path
+```
+*Result:* Found `com.docker.backend` (PID 24996) running from `C:\Program Files\Docker\...`, confirming Docker Desktop was active.
+
+### Step H: Check WSL2 Distros
+Checked which WSL2 distributions were running, since Docker Desktop uses WSL2 as its backend.
+**Command:**
+```powershell
+wsl --list --verbose
+```
+*Result:*
+```
+  NAME              STATE           VERSION
+* Ubuntu            Stopped         2
+  docker-desktop    Running         2
+```
+The `docker-desktop` WSL distro was running — this is the engine behind Docker Desktop's K8s cluster.
+
+### Step I: Inspect Windows Startup Registry Keys
+Checked the Windows Registry `Run` keys to see if Docker Desktop was registered to start on login.
+**Commands:**
+```powershell
+Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" | Format-List
+Get-ItemProperty -Path "HKLM:\Software\Microsoft\Windows\CurrentVersion\Run" | Format-List
+```
+*Result:* No Docker-related entries found in either user or machine `Run` keys. Docker was NOT set to start on login via registry.
+
+### Step J: Check Windows Startup Folders
+Inspected the user and system Startup folders for shortcut files.
+**Commands:**
+```powershell
+Get-ChildItem "C:\Users\ADMIN\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup"
+Get-ChildItem "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup"
+```
+*Result:* No Docker-related shortcuts found. Only a Logitech utility and "Scan Plus" shortcut were present.
+
+### Step K: Check Windows Services
+Checked if any Docker-related Windows Services were set to auto-start.
+**Command:**
+```powershell
+Get-Service | Where-Object { $_.Name -like "*Docker*" } | Select-Object Name, StartType, Status
+```
+*Result:* The Docker service had `StartType: Manual` and `Status: Stopped` — it was NOT auto-starting via Windows Services.
+
+### Step L: Check Scheduled Tasks
+Searched for any scheduled tasks that might be triggering Docker.
+**Command:**
+```powershell
+schtasks /query /v /fo CSV | Select-String "Docker"
+```
+*Result:* No Docker-related scheduled tasks found.
+
+### Step M: Trace Deployments to Source Projects
+Searched the entire filesystem for YAML files that originally defined the K8s deployments.
+**Commands:**
+```powershell
+# Used ripgrep to search across all workspace folders
+rg "client-depl" --include "*.yaml" e:\KHOA\HAPPY_CODING
+rg "currency-conversion" --include "*.yaml" e:\KHOA\HAPPY_CODING
+rg "currency-exchange" --include "*.yaml" e:\KHOA\HAPPY_CODING
 ```
 *Result:* Traced `client-depl` to `Microservices/482-dont-cancel/ticketing/infra/k8s/client-depl.yaml` and `currency-*` deployments to `Microservices/spring-microservices-v3-main/05.kubernetes/`.
 
-### Step G: Query Live Cluster for Image and Timestamp
-I queried each deployment for its creation date and container image to confirm the origin.
-**Command:**
+### Step N: Query Live Cluster for Image and Timestamp
+Queried each deployment for its creation date and container image to cross-reference with source files.
+**Commands:**
 ```powershell
 kubectl get deployment client-depl -o jsonpath='{.metadata.creationTimestamp}{"\n"}{.spec.template.spec.containers[*].image}'
-kubectl get deployment currency-conversion -o jsonpath='{.metadata.creationTimestamp}{"\n"}{.spec.template.spec.containers[*].image}'
-kubectl get deployment currency-exchange -o jsonpath='{.metadata.creationTimestamp}{"\n"}{.spec.template.spec.containers[*].image}'
-```
-*Result:* `client-depl` was created on 2025-07-11 (image: `caprinak/client`), `currency-conversion` and `currency-exchange` on 2025-12-26 (images: `currency-conversion-service:v1`, `currency-exchange-service:v1`).
+# Output: 2025-07-11T10:09:16Z / caprinak/client
 
-### Step H: Find Docker Desktop Settings
-I searched for Docker Desktop's configuration file to check the `KubernetesEnabled` flag.
-**Command:**
+kubectl get deployment currency-conversion -o jsonpath='{.metadata.creationTimestamp}{"\n"}{.spec.template.spec.containers[*].image}'
+# Output: 2025-12-26T04:39:13Z / currency-conversion-service:v1
+
+kubectl get deployment currency-exchange -o jsonpath='{.metadata.creationTimestamp}{"\n"}{.spec.template.spec.containers[*].image}'
+# Output: 2025-12-26T04:36:56Z / currency-exchange-service:v1
+```
+
+### Step O: Find and Analyze Docker Desktop Settings File
+Searched for the Docker Desktop configuration file to check the auto-start and Kubernetes flags.
+**Commands:**
 ```powershell
+# Located Docker config directories
 Get-ChildItem -Path "C:\Users\ADMIN\AppData\Roaming\Docker" -File
+Get-ChildItem -Path "C:\Users\ADMIN\AppData\Roaming\Docker Desktop" -File
+
+# Read the settings file
 cat "C:\Users\ADMIN\AppData\Roaming\Docker\settings-store.json"
 ```
-*Result:* Found `"AutoStart": false` (already disabled) but `"KubernetesEnabled": true` — the **true root cause** of the persistent auto-start.
+*Result:*
+```json
+{
+  "AutoStart": false,           // ✅ Already disabled
+  "KubernetesEnabled": true,    // ❌ ROOT CAUSE
+  ...
+}
+```
+**Conclusion:** Even though `AutoStart` was `false`, Docker was being triggered by something else (possibly VS Code Docker extension or manual open). Once running, `KubernetesEnabled: true` caused the full K8s cluster to spin up every time.
+
+**Fix applied:** Set `"KubernetesEnabled": false` in `settings-store.json`.
 
 ---
 
