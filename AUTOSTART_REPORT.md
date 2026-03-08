@@ -324,5 +324,36 @@ If your project grows, you might not want *every* service to start even when you
 
 ---
 
-## 7. Conclusion
+## 8. Accessing & Testing the Services
+
+Since the services are currently using `ClusterIP`, they are not directly exposed to your Windows browser at `localhost`. You can use **Port Forwarding** to securely access them for testing.
+
+### 8.1 Access URLs & Commands
+
+| Component | Purpose | Access URL | Port-Forward Command |
+|---|---|---|---|
+| **Ticketing Client** | Frontend UI | `http://localhost:3000` | `kubectl port-forward svc/client-srv 3000:3000` |
+| **Currency Conversion** | API Backend | `http://localhost:8100` | `kubectl port-forward svc/currency-conversion 8100:8100` |
+| **Currency Exchange** | API Backend | `http://localhost:8000` | `kubectl port-forward svc/currency-exchange 8000:8000` |
+
+### 8.2 Testing Instructions
+1.  Open a PowerShell terminal.
+2.  Run the **Port-Forward Command** for the service you want to test.
+3.  Keep the terminal open (the command will stay running).
+4.  Open your browser or Postman and visit the **Access URL**.
+5.  To stop testing, press `Ctrl + C` in the terminal.
+
+### 8.3 Current Testing Results (Verified 2026-03-08)
+
+I have performed live tests using the port-forwarding method. Here is the current status of each project:
+
+| Service | Result | URL Tested | Note |
+|---|---|---|---|
+| **Currency Exchange** | ✅ **SUCCESS** | `http://localhost:8000/currency-exchange/from/USD/to/INR` | Returns valid JSON with exchange rates. |
+| **Currency Conversion** | ❌ **ERROR 500** | `http://localhost:8100/currency-conversion/...` | Pod is running but fails to connect to the exchange service internally. |
+| **Ticketing Client** | ❌ **BUILD ERROR** | `http://localhost:3000` | Frontend fails to start due to missing `api/build-client` module. |
+
+---
+
+## 9. Conclusion
 The environment is now configured for manual, on-demand use. By following the "Next Action" in Section 6.1, you will ensure a completely silent system on startup with no hidden container overhead.
