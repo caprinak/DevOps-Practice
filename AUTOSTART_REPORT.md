@@ -14,21 +14,75 @@ One active Docker Compose project was detected running in the background:
 - **Location:** `E:\KHOA\HAPPY_CODING\CODER THAN THANH\microservices&devops\fully-completed-microservices-Java-Springboot\docker-compose.yml`
 - **Status:** Running (3 containers)
 
-### 2.2 Active Kubernetes Deployments
-The following deployments are active in the Local Kubernetes cluster (Docker Desktop):
-- `client-depl`: 1/1 replicas
-- `currency-conversion`: 1/1 replicas
-- `currency-exchange`: 1/1 replicas
+### 2.2 Active Kubernetes Deployments — Full Project Tracing
 
-These deployments are set to keep their pods running. Because Docker Desktop's Kubernetes cluster persists its state, these pods are automatically restarted whenever the cluster starts.
+The following deployments were found active in the `default` namespace of the local Docker Desktop Kubernetes cluster. I traced each one back to its **source project** and **original deployment YAML file**.
 
-### 2.3 System Services & Startup
-The primary "trigger" for these containers is **Docker Desktop**.
-- **Windows Startup:** Docker Desktop is likely configured to start automatically upon user login.
-- **Service Dependency:** When Docker Desktop starts, it initializes the Docker Engine and the Kubernetes cluster (if enabled). 
-- **Persistence:** These engines then resume the previous state, starting all containers and pods that were running when the system last shut down.
+#### Deployment 1: `client-depl`
+| Field | Value |
+|---|---|
+| **Created** | 2025-07-11 |
+| **Image** | `caprinak/client` (Docker Hub) |
+| **Replicas** | 1 (scaled to 0 on 2026-03-01) |
+| **Source Project** | `Microservices/482-dont-cancel/ticketing` |
+| **Source YAML** | `e:\KHOA\HAPPY_CODING\Microservices\482-dont-cancel\ticketing\infra\k8s\client-depl.yaml` |
+| **What it is** | A ticketing app client (Next.js/React), exposed on port 3000 via `client-srv` service |
+
+#### Deployment 2: `currency-conversion`
+| Field | Value |
+|---|---|
+| **Created** | 2025-12-26 |
+| **Image** | `currency-conversion-service:v1` (local image) |
+| **Replicas** | 1 (scaled to 0 on 2026-03-01) |
+| **Source Project** | `Microservices/spring-microservices-v3-main/05.kubernetes` |
+| **Source YAML** | `e:\KHOA\HAPPY_CODING\Microservices\spring-microservices-v3-main\spring-microservices-v3-main\05.kubernetes\currency-conversion-service\deployment.yaml` |
+| **What it is** | A Spring Boot currency conversion microservice (port 8100), uses a ConfigMap for environment variables |
+
+#### Deployment 3: `currency-exchange`
+| Field | Value |
+|---|---|
+| **Created** | 2025-12-26 |
+| **Image** | `currency-exchange-service:v1` (local image) |
+| **Replicas** | 1 (scaled to 0 on 2026-03-01) |
+| **Source Project** | `Microservices/spring-microservices-v3-main/05.kubernetes` |
+| **Source YAML** | `e:\KHOA\HAPPY_CODING\Microservices\spring-microservices-v3-main\spring-microservices-v3-main\05.kubernetes\currency-exchange-service\deployment.yaml` |
+| **What it is** | A Spring Boot currency exchange microservice (port 8000) |
+
+### 2.3 Why These Pods Auto-start — The Causal Chain
+
+The auto-start behavior is a **chain reaction** triggered by the following sequence:
+
+```
+Windows Login
+  └─► Docker Desktop starts (if "Start on login" is enabled)
+        └─► WSL2 distro `docker-desktop` starts
+              └─► Docker Engine starts
+              └─► Kubernetes cluster starts (if "KubernetesEnabled" is true)
+                    └─► kube-system pods start (coredns, etcd, apiserver, etc.)
+                    └─► All Deployments in `default` namespace resume their desired replica count
+                          └─► client-depl pod starts (from ticketing project)
+                          └─► currency-conversion pod starts (from spring-microservices project)
+                          └─► currency-exchange pod starts (from spring-microservices project)
+```
+
+**Key insight:** Kubernetes deployments are *persistent state* stored in etcd. Once you `kubectl apply` a deployment, it lives in the cluster forever until you explicitly `kubectl delete` it. Even after scaling to 0, the deployment object remains. The pods were originally created months ago during learning/practice sessions, but because the deployment objects were never deleted, they kept restarting every time the cluster came online.
+
+### 2.4 Docker Desktop Configuration Analysis (Follow-up: 2026-03-08)
+
+On 2026-03-08, after a Windows restart, the K8s cluster was observed starting again despite previous mitigations. Investigation of `C:\Users\ADMIN\AppData\Roaming\Docker\settings-store.json` revealed:
+
+```json
+{
+  "AutoStart": false,           // ✅ Already disabled
+  "KubernetesEnabled": true,    // ❌ ROOT CAUSE — K8s starts whenever Docker starts
+  ...
+}
+```
+
+**Fix applied:** Changed `"KubernetesEnabled"` to `false`. This ensures the K8s cluster will NOT start even if Docker Desktop is opened manually.
 
 ---
+
 
 ## 3. Investigation Steps & Commands Used
 
@@ -76,7 +130,42 @@ view_file setup-env.sh
 
 ---
 
+### Follow-up Investigation (2026-03-08)
+
+After a Windows restart one week later, the K8s cluster was observed running again. The following additional investigation was performed:
+
+### Step F: Trace Deployments to Source Projects
+I searched the entire filesystem for YAML files that define these deployments to find which project originally created them.
+**Command:**
+```powershell
+# Searched across all workspace folders for deployment YAML files
+grep -r "client-depl" --include="*.yaml" e:\KHOA\HAPPY_CODING
+grep -r "currency-conversion" --include="*.yaml" e:\KHOA\HAPPY_CODING
+grep -r "currency-exchange" --include="*.yaml" e:\KHOA\HAPPY_CODING
+```
+*Result:* Traced `client-depl` to `Microservices/482-dont-cancel/ticketing/infra/k8s/client-depl.yaml` and `currency-*` deployments to `Microservices/spring-microservices-v3-main/05.kubernetes/`.
+
+### Step G: Query Live Cluster for Image and Timestamp
+I queried each deployment for its creation date and container image to confirm the origin.
+**Command:**
+```powershell
+kubectl get deployment client-depl -o jsonpath='{.metadata.creationTimestamp}{"\n"}{.spec.template.spec.containers[*].image}'
+kubectl get deployment currency-conversion -o jsonpath='{.metadata.creationTimestamp}{"\n"}{.spec.template.spec.containers[*].image}'
+kubectl get deployment currency-exchange -o jsonpath='{.metadata.creationTimestamp}{"\n"}{.spec.template.spec.containers[*].image}'
+```
+*Result:* `client-depl` was created on 2025-07-11 (image: `caprinak/client`), `currency-conversion` and `currency-exchange` on 2025-12-26 (images: `currency-conversion-service:v1`, `currency-exchange-service:v1`).
+
+### Step H: Find Docker Desktop Settings
+I searched for Docker Desktop's configuration file to check the `KubernetesEnabled` flag.
+**Command:**
+```powershell
+Get-ChildItem -Path "C:\Users\ADMIN\AppData\Roaming\Docker" -File
+cat "C:\Users\ADMIN\AppData\Roaming\Docker\settings-store.json"
+```
+*Result:* Found `"AutoStart": false` (already disabled) but `"KubernetesEnabled": true` — the **true root cause** of the persistent auto-start.
+
 ---
+
 
 ## 4. Recommended Resolution (Original Plan)
 
