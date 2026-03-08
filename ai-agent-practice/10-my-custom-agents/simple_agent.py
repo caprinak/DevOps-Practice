@@ -228,7 +228,7 @@ class SimpleAgent:
             else:
                 # LLM provided final answer
                 final_answer = message.content
-                print(f"\n✅ Final Answer:\n{final_answer}")
+                print(f"\nDone! Final Answer:\n{final_answer}")
                 self.messages.append({"role": "assistant", "content": final_answer})
                 return final_answer
         
@@ -241,7 +241,7 @@ class SimpleAgent:
 if __name__ == "__main__":
     # Check for API key
     if not os.getenv("OPENAI_API_KEY"):
-        print("❌ Please set OPENAI_API_KEY environment variable")
+        print("Error: Please set OPENAI_API_KEY environment variable")
         print("   export OPENAI_API_KEY='your-key-here'")
         exit(1)
     
@@ -283,4 +283,4 @@ if __name__ == "__main__":
             print("\n\nGoodbye!")
             break
         except Exception as e:
-            print(f"\n❌ Error: {str(e)}")
+            print(f"\nError: Error: {str(e)}")

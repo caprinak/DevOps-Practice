@@ -5,7 +5,8 @@ This document provides quick commands and scripts to manage the microservices ec
 ---
 
 > 📖 **See Also**: [Debugging & Maintenance Log](debugging_and_maintenance.md) for troubleshooting tips and detailed incident reports.
-
+#create db 
+docker exec -i ms_pg_sql psql -U postgres -d postgres -c "CREATE DATABASE customer; CREATE DATABASE product; CREATE DATABASE \"order\"; CREATE DATABASE payment;"
 ## 🚀 One-Click Startup (Recommended)
 
 We have created automated scripts to handle the complex startup sequence for you.

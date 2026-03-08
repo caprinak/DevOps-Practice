@@ -32,7 +32,7 @@ MODEL = "gemini-1.5-flash"  # Fast and capable for agents
 # Initialize Gemini
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
-    print("❌ Please set GEMINI_API_KEY environment variable")
+    print("Error: Please set GEMINI_API_KEY environment variable")
     print("   Get free key at: https://aistudio.google.com/app/apikey")
     print("   Then set it:")
     print("   Windows PowerShell: $env:GEMINI_API_KEY='your-key'")
@@ -74,7 +74,7 @@ def write_file(file_path: str, content: str) -> str:
     try:
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(content)
-        return f"✅ Successfully wrote to {file_path}"
+        return f"Done! Successfully wrote to {file_path}"
     except Exception as e:
         return f"Error writing file: {str(e)}"
 
@@ -249,10 +249,10 @@ class GeminiAgent:
                                 print(f"   Result: {result[:300]}...")
                             except Exception as e:
                                 result = f"Error: {str(e)}"
-                                print(f"   ❌ Error: {result}")
+                                print(f"   Error: Error: {result}")
                         else:
                             result = f"Unknown tool: {tool_name}"
-                            print(f"   ❌ {result}")
+                            print(f"   Error: {result}")
                         
                         # Send result back to Gemini
                         user_input = f"Tool '{tool_name}' returned: {result}"
@@ -260,11 +260,11 @@ class GeminiAgent:
                     
                     # Regular text response
                     answer = response.text
-                    print(f"\n✅ Final Answer:\n{answer}")
+                    print(f"\nDone! Final Answer:\n{answer}")
                     return answer
                     
             except Exception as e:
-                return f"❌ Error: {str(e)}"
+                return f"Error: Error: {str(e)}"
         
         return "Max iterations reached."
 
@@ -313,7 +313,7 @@ def main():
             print("\n\n👋 Goodbye!")
             break
         except Exception as e:
-            print(f"\n❌ Error: {str(e)}")
+            print(f"\nError: Error: {str(e)}")
 
 if __name__ == "__main__":
     main()

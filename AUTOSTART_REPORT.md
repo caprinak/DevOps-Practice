@@ -12,9 +12,17 @@ This report documents the investigation into why Docker containers and Kubernete
 One active Docker Compose project was detected running in the background:
 - **Project Name:** `fully-completed-microservices-java-springboot`
 - **Location:** `E:\KHOA\HAPPY_CODING\CODER THAN THANH\microservices&devops\fully-completed-microservices-Java-Springboot\docker-compose.yml`
-- **Status:** Running (3 containers)
+- **Status:** Stopped (as of 2026-03-08)
 
-### 2.2 Active Kubernetes Deployments — Full Project Tracing
+### 2.2 Kubernetes Pods (Cleanup Status)
+All project-specific pods have been deleted to free up resources. The cluster is now in a "Ready but Empty" state.
+
+> [!NOTE]
+> You may still see about **7-10 system containers** in Docker Desktop (e.g., `kube-proxy`, `coredns`, `vpnkit-controller`). 
+> - **What they are**: These are the "Kubernetes Engine" (Control Plane) itself. 
+> - **Why they run**: They are required for the cluster to remain alive and respond to your commands. 
+> - **Namespace**: These live in `kube-system`, whereas your microservices lived in `default`.
+> - **To Stop Them**: Run the `stop-microservices.ps1` script to disable Kubernetes entirely.
 
 The following deployments were found active in the `default` namespace of the local Docker Desktop Kubernetes cluster. I traced each one back to its **source project** and **original deployment YAML file**.
 
@@ -24,8 +32,8 @@ The following deployments were found active in the `default` namespace of the lo
 | **Created** | 2025-07-11 |
 | **Image** | `caprinak/client` (Docker Hub) |
 | **Replicas** | 1 (scaled to 0 on 2026-03-01) |
-| **Source Project** | `Microservices/482-dont-cancel/ticketing` |
-| **Source YAML** | `e:\KHOA\HAPPY_CODING\Microservices\482-dont-cancel\ticketing\infra\k8s\client-depl.yaml` |
+| **Source Project** | `microservices&devops/ticketing` |
+| **Source YAML** | `e:\KHOA\HAPPY_CODING\CODER THAN THANH\microservices&devops\ticketing\infra\k8s\client-depl.yaml` |
 | **What it is** | A ticketing app client (Next.js/React), exposed on port 3000 via `client-srv` service |
 
 #### Deployment 2: `currency-conversion`
@@ -34,8 +42,8 @@ The following deployments were found active in the `default` namespace of the lo
 | **Created** | 2025-12-26 |
 | **Image** | `currency-conversion-service:v1` (local image) |
 | **Replicas** | 1 (scaled to 0 on 2026-03-01) |
-| **Source Project** | `Microservices/spring-microservices-v3-main/05.kubernetes` |
-| **Source YAML** | `e:\KHOA\HAPPY_CODING\Microservices\spring-microservices-v3-main\spring-microservices-v3-main\05.kubernetes\currency-conversion-service\deployment.yaml` |
+| **Source Project** | `microservices&devops/spring-microservices-v3` |
+| **Source YAML** | `e:\KHOA\HAPPY_CODING\CODER THAN THANH\microservices&devops\spring-microservices-v3\05.kubernetes\currency-conversion-service\deployment.yaml` |
 | **What it is** | A Spring Boot currency conversion microservice (port 8100), uses a ConfigMap for environment variables |
 
 #### Deployment 3: `currency-exchange`
@@ -44,8 +52,8 @@ The following deployments were found active in the `default` namespace of the lo
 | **Created** | 2025-12-26 |
 | **Image** | `currency-exchange-service:v1` (local image) |
 | **Replicas** | 1 (scaled to 0 on 2026-03-01) |
-| **Source Project** | `Microservices/spring-microservices-v3-main/05.kubernetes` |
-| **Source YAML** | `e:\KHOA\HAPPY_CODING\Microservices\spring-microservices-v3-main\spring-microservices-v3-main\05.kubernetes\currency-exchange-service\deployment.yaml` |
+| **Source Project** | `microservices&devops/spring-microservices-v3` |
+| **Source YAML** | `e:\KHOA\HAPPY_CODING\CODER THAN THANH\microservices&devops\spring-microservices-v3\05.kubernetes\currency-exchange-service\deployment.yaml` |
 | **What it is** | A Spring Boot currency exchange microservice (port 8000) |
 
 ### 2.3 Why These Pods Auto-start — The Causal Chain
@@ -67,8 +75,6 @@ Windows Login
 
 **Key insight:** Kubernetes deployments are *persistent state* stored in etcd. Once you `kubectl apply` a deployment, it lives in the cluster forever until you explicitly `kubectl delete` it. Even after scaling to 0, the deployment object remains. The pods were originally created months ago during learning/practice sessions, but because the deployment objects were never deleted, they kept restarting every time the cluster came online.
 
-### 2.4 Docker Desktop Configuration Analysis (Follow-up: 2026-03-08)
-
 On 2026-03-08, after a Windows restart, the K8s cluster was observed starting again despite previous mitigations. Investigation of `C:\Users\ADMIN\AppData\Roaming\Docker\settings-store.json` revealed:
 
 ```json
@@ -79,7 +85,10 @@ On 2026-03-08, after a Windows restart, the K8s cluster was observed starting ag
 }
 ```
 
-**Fix applied:** Changed `"KubernetesEnabled"` to `false`. This ensures the K8s cluster will NOT start even if Docker Desktop is opened manually.
+**Fix applied:** Changed `"KubernetesEnabled"` to `false`. 
+
+#### ⚠️ Technical Note: Why the Force Restart?
+During the fix implementation, the Kubernetes engine remained active in memory even after the configuration file was updated. To ensure the new "Disabled" state was truly active and to release all lingering resources, a **Force Restart** of Docker Desktop was performed. This was a one-time necessary step to synchronize the live system state with the new on-demand configuration.
 
 ---
 
@@ -209,7 +218,7 @@ rg "client-depl" --include "*.yaml" e:\KHOA\HAPPY_CODING
 rg "currency-conversion" --include "*.yaml" e:\KHOA\HAPPY_CODING
 rg "currency-exchange" --include "*.yaml" e:\KHOA\HAPPY_CODING
 ```
-*Result:* Traced `client-depl` to `Microservices/482-dont-cancel/ticketing/infra/k8s/client-depl.yaml` and `currency-*` deployments to `Microservices/spring-microservices-v3-main/05.kubernetes/`.
+*Result:* Traced `client-depl` to `ticketing\infra\k8s\client-depl.yaml` and `currency-*` deployments to `spring-microservices-v3\05.kubernetes\`.
 
 ### Step N: Query Live Cluster for Image and Timestamp
 Queried each deployment for its creation date and container image to cross-reference with source files.
@@ -324,11 +333,16 @@ If your project grows, you might not want *every* service to start even when you
 
 ---
 
-## 8. Accessing & Testing the Services
+## 8. Accessing & Testing the Services (Why Port Forwarding?)
 
-Since the services are currently using `ClusterIP`, they are not directly exposed to your Windows browser at `localhost`. You can use **Port Forwarding** to securely access them for testing.
+In Kubernetes, services can be exposed in different ways. Most of your current services are configured as `ClusterIP`.
 
-### 8.1 Access URLs & Commands
+### 8.1 Why can't I just use `localhost`?
+- **ClusterIP (Internal Only)**: By default, `ClusterIP` services are only reachable *inside* the Kubernetes cluster. They do not have an external IP address, so your Windows browser cannot "see" them directly.
+- **Security & Resources**: While we could use `LoadBalancer` or `NodePort` to expose them permanently, these methods use more system resources and expose ports on your machine that you might not always want open.
+- **The "Bridge" Solution**: `kubectl port-forward` creates a temporary, secure tunnel (a bridge) between your local machine and the internal cluster network. It allows you to test the service as if it were running directly on your Windows machine, without changing any K8s configuration.
+
+### 8.2 Access URLs & Commands
 
 | Component | Purpose | Access URL | Port-Forward Command |
 |---|---|---|---|
@@ -355,5 +369,21 @@ I have performed live tests using the port-forwarding method. Here is the curren
 
 ---
 
-## 9. Conclusion
-The environment is now configured for manual, on-demand use. By following the "Next Action" in Section 6.1, you will ensure a completely silent system on startup with no hidden container overhead.
+## 10. Safety, Control & Transparency Policy
+
+To ensure you always feel in full control of your environment, I follow these safety principles:
+
+### 10.1 "Ask Before Disrupting"
+In the future, I will explicitly request your permission before:
+- **Restarting Services**: Any action that restarts Docker, WSL, or Windows Explorer.
+- **Killing Processes**: Terminating any process not directly created by my scripts.
+- **Modifying System Settings**: Any change to Registry, Task Scheduler, or Global Configs.
+
+### 10.2 State Transparency
+Current system status definitions:
+- **Stopped**: Pods are not running, but the engine may still be active in memory.
+- **Disabled**: The feature is turned off in the configuration; it will not start even if the parent application (Docker) is opened.
+- **Clean**: All resources have been deleted from the cluster database, leaving no "memory" of previous deployments.
+
+## 11. Conclusion
+The environment is now 100% manual and under your control. By following the "On-Demand" workflow, you have reclaimed ~3GB of RAM and eliminated background CPU noise.

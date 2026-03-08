@@ -11,7 +11,7 @@ from typing import Dict, List, Any, Callable
 # ==========================================
 
 OLLAMA_URL = "http://localhost:11434/api/chat"
-MODEL = "llama3.2"  # You can change this to any model you have installed
+MODEL = "tinyllama:latest"  # Using tinyllama (637MB) - works with limited memory
 
 # ==========================================
 # DEFINE YOUR TOOLS HERE
@@ -47,7 +47,7 @@ def write_file(file_path: str, content: str) -> str:
     try:
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(content)
-        return f"✅ Successfully wrote to {file_path}"
+        return f"Done! Successfully wrote to {file_path}"
     except Exception as e:
         return f"Error writing file: {str(e)}"
 
@@ -234,7 +234,7 @@ class OllamaAgent:
     
     def run(self, user_input: str) -> str:
         """Run the agent with user input"""
-        print(f"\n🎯 Task: {user_input}\n")
+        print(f"\n Task: {user_input}\n")
         
         # Add user message
         self.messages.append({"role": "user", "content": user_input})
@@ -243,40 +243,40 @@ class OllamaAgent:
         while iteration < self.max_iterations:
             iteration += 1
             print(f"\n{'='*60}")
-            print(f"🔄 Iteration {iteration}/{self.max_iterations}")
+            print(f" Iteration {iteration}/{self.max_iterations}")
             print('='*60)
             
             # Get response from Ollama
-            print("🤖 Thinking...")
+            print(" Thinking...")
             response = self.chat_with_ollama(self.messages)
             
             if response.startswith("ERROR:"):
-                print(f"❌ {response}")
+                print(f"Error: {response}")
                 return response
             
-            print(f"\n💭 LLM Response:\n{response}\n")
+            print(f"\n LLM Response:\n{response}\n")
             
             # Check if LLM wants to use a tool
             tool_name, tool_params = self.parse_tool_call(response)
             
             if tool_name and tool_name in TOOL_MAP:
-                print(f"🔧 Using tool: {tool_name}")
+                print(f" Using tool: {tool_name}")
                 print(f"   Parameters: {tool_params}")
                 
                 # Execute the tool
                 try:
                     result = TOOL_MAP[tool_name](**tool_params)
-                    print(f"\n📊 Result:\n{result[:500]}...")  # Truncate long results
+                    print(f"\n Result:\n{result[:500]}...")  # Truncate long results
                 except Exception as e:
                     result = f"Error: {str(e)}"
-                    print(f"   ❌ Error: {result}")
+                    print(f"   Error: Error: {result}")
                 
                 # Add tool result to conversation
                 tool_result_msg = f"Tool '{tool_name}' result:\n{result}"
                 self.messages.append({"role": "user", "content": tool_result_msg})
             else:
                 # LLM provided final answer
-                print(f"\n✅ Final Answer:\n{response}")
+                print(f"\nDone! Final Answer:\n{response}")
                 self.messages.append({"role": "assistant", "content": response})
                 return response
         
@@ -288,17 +288,17 @@ class OllamaAgent:
 
 def print_header():
     print("="*60)
-    print("🤖 SIMPLE AGENT WITH OLLAMA (Local LLM)")
+    print("SIMPLE AGENT WITH OLLAMA (Local LLM)")
     print("="*60)
     print(f"\nModel: {MODEL}")
     print("Status: 100% Local - No API key needed!")
     print("\nMake sure Ollama is running:")
     print("  1. Install: winget install Ollama.Ollama")
-    print("  2. Download model: ollama pull llama3.2")
+    print("  2. Download model: ollama pull tinyllama")
     print("  3. Run this script!\n")
 
 def print_examples():
-    print("\n📚 Example tasks you can try:")
+    print("\n Example tasks you can try:")
     examples = [
         "Calculate 15 * 23 + 47",
         "What is 2 to the power of 10?",
@@ -317,9 +317,9 @@ def main():
     agent = OllamaAgent(model=MODEL, max_iterations=10)
     
     # Check if Ollama is running
-    print("🔍 Checking Ollama...")
+    print("Checking Ollama...")
     if not agent.check_ollama():
-        print("\n❌ ERROR: Cannot connect to Ollama!")
+        print("\nError: ERROR: Cannot connect to Ollama!")
         print("\nPlease make sure Ollama is installed and running:")
         print("  1. Install: winget install Ollama.Ollama")
         print("  2. Download model: ollama pull llama3.2")
@@ -327,22 +327,22 @@ def main():
         print("\nThen run this script again.")
         return
     
-    print("✅ Ollama is running!")
+    print("Done! Ollama is running!")
     
     # List available models
     models = agent.list_models()
     if models:
-        print(f"📦 Available models: {', '.join(models)}")
+        print(f" Available models: {', '.join(models)}")
         if MODEL not in models:
-            print(f"\n⚠️  Model '{MODEL}' not found!")
+            print(f"\nWarning:  Model '{MODEL}' not found!")
             print(f"Download it with: ollama pull {MODEL}")
             print(f"Or change MODEL variable in this script to: {models[0]}")
             return
     else:
-        print("⚠️  No models found. Download one with: ollama pull llama3.2")
+        print("Warning:  No models found. Download one with: ollama pull llama3.2")
         return
     
-    print(f"✅ Using model: {MODEL}\n")
+    print(f"Done! Using model: {MODEL}\n")
     
     print_examples()
     
@@ -355,7 +355,7 @@ def main():
             user_input = input("\n> ").strip()
             
             if user_input.lower() in ['quit', 'exit', 'q']:
-                print("\n👋 Goodbye!")
+                print("\n Goodbye!")
                 break
             
             if not user_input:
@@ -365,10 +365,10 @@ def main():
             result = agent.run(user_input)
             
         except KeyboardInterrupt:
-            print("\n\n👋 Goodbye!")
+            print("\n\n Goodbye!")
             break
         except Exception as e:
-            print(f"\n❌ Error: {str(e)}")
+            print(f"\nError: Error: {str(e)}")
 
 if __name__ == "__main__":
     main()

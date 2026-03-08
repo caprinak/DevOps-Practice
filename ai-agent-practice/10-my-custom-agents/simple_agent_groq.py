@@ -29,7 +29,7 @@ MODEL = "llama-3.1-70b-versatile"  # Best overall model
 # Initialize Groq client
 api_key = os.getenv("GROQ_API_KEY")
 if not api_key:
-    print("❌ Please set GROQ_API_KEY environment variable")
+    print("Error: Please set GROQ_API_KEY environment variable")
     print("   Get free key at: https://console.groq.com")
     print("   Then set it:")
     print("   Windows PowerShell: $env:GROQ_API_KEY='your-key'")
@@ -71,7 +71,7 @@ def write_file(file_path: str, content: str) -> str:
     try:
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(content)
-        return f"✅ Successfully wrote to {file_path}"
+        return f"Done! Successfully wrote to {file_path}"
     except Exception as e:
         return f"Error writing file: {str(e)}"
 
@@ -210,7 +210,7 @@ class GroqAgent:
                     tool_choice="auto"
                 )
             except Exception as e:
-                return f"❌ API Error: {str(e)}"
+                return f"Error: API Error: {str(e)}"
             
             message = response.choices[0].message
             
@@ -237,7 +237,7 @@ class GroqAgent:
                             print(f"   Result: {result[:300]}...")
                         except Exception as e:
                             result = f"Error: {str(e)}"
-                            print(f"   ❌ Error: {result}")
+                            print(f"   Error: Error: {result}")
                     else:
                         result = f"Unknown tool: {tool_name}"
                     
@@ -250,7 +250,7 @@ class GroqAgent:
             else:
                 # Final answer
                 answer = message.content
-                print(f"\n✅ Final Answer:\n{answer}")
+                print(f"\nDone! Final Answer:\n{answer}")
                 self.messages.append({"role": "assistant", "content": answer})
                 return answer
         
@@ -299,7 +299,7 @@ def main():
             print("\n\n👋 Goodbye!")
             break
         except Exception as e:
-            print(f"\n❌ Error: {str(e)}")
+            print(f"\nError: Error: {str(e)}")
 
 if __name__ == "__main__":
     main()
